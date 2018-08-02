@@ -22,6 +22,7 @@ set -e
 PGENV_ROOT=$(dirname $(dirname $0))
 PGSQL=$PGENV_ROOT/pgsql
 PG_DATA=$PGSQL/data
+FLAG_FILE=$PGENV_ROOT/configure.flags
 
 # Now -w because 9.0 and earlier always time out even when successful.
 PG_CTL="$PGSQL/bin/pg_ctl -D $PG_DATA"
@@ -190,8 +191,20 @@ case $1 in
 EOF
         fi
 
+        # prefix is always controlled by pgenv
+        CONFIGURE_FLAGS=("--prefix=$PGENV_ROOT/pgsql-$v")
+
+        if [ ! -f $FLAG_FILE ]; then
+            # maintain default behavior
+            CONFIGURE_FLAGS+=("-with-perl PERL=/usr/bin/perl")
+        else
+            # parse .pgenv/configure.flags and append each line to the flags
+            # that will be passed to configure
+            GLOBIGNORE='*' IFS=$'\n' CONFIGURE_FLAGS+=($(cat $FLAG_FILE));
+        fi
+
         # Configure.
-        ./configure --prefix=$PGENV_ROOT/pgsql-$v --with-perl PERL=/usr/bin/perl
+        ./configure ${CONFIGURE_FLAGS[@]}
 
         # make and make install.
         if [ "`echo $v | awk -F . '{print $1}'`" -lt 9 ]; then
