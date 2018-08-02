@@ -43,11 +43,41 @@ pgversions() {
     done
 }
 
+checkinstalled() {
+    v=$1
+    # Make sure it's a version we have.
+    if [ ! -e "pgsql-$v" ]; then
+        echo "PostgreSQL $v not installed; installed versions:"
+        pgversions
+        exit 1
+    fi
+}
+
+switchversion() {
+    v=$1
+    # Check if current version?
+    if [ "`readlink pgsql`" = "pgsql-$v" ]; then
+        echo "Already using PostgreSQL $v"
+    else
+        # Shut down existing running instance.
+        if [ -e "pgsql" ]; then
+            if $PG_CTL status &> /dev/null; then
+                $PG_CTL stop
+            fi
+        fi
+
+        # Link the new instance.
+        ln -nsf pgsql-$v pgsql
+        echo "Switched PostgreSQL to $v"
+    fi
+}
+
 pgenvhelp() {
         cat <<EOF
 Usage: pgenv <command> [<args>]"
 
 The pgenv commands are:
+    switch    Set the current PostgreSQL version
     use       Set and start the current PostgreSQL version
     clear     Stop and unset the current PostgreSQL version
     start     Start the current PostgreSQL server
@@ -64,29 +94,17 @@ EOF
 }
 
 case $1 in
+    switch)
+        v=$2
+        checkinstalled $v
+        switchversion $v
+
+        exit
+        ;;
     use)
         v=$2
-        # Make sure it's a version we have.
-        if [ ! -e "pgsql-$v" ]; then
-            echo "PostgreSQL $v not installed; installed versions:"
-            pgversions
-            exit 1
-        fi
-
-        # Check if current version?
-        if [ "`readlink pgsql`" = "pgsql-$v" ]; then
-            echo "Already using PostgreSQL $v"
-        else
-            # Shut down existing running instance.
-            if [ -e "pgsql" ]; then
-                if $PG_CTL status &> /dev/null; then
-                    $PG_CTL stop
-                fi
-            fi
-
-            # Link the new instance.
-            ln -nsf pgsql-$2 pgsql
-        fi
+        checkinstalled $v
+        switchversion $v
 
         # Init if needed.
         if [ ! -d $PG_DATA ]; then
