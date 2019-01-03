@@ -1,0 +1,44 @@
+# pgenv completion
+
+_pgenv()
+{
+	version_complete()
+	{
+		local versions=$(for x in `pgenv ls | tr -d "*" | awk -F "pgsql-" '{print $2}'`; do echo ${x}; done)
+		COMPREPLY=($( compgen -W "${versions}" -- "${1:-$cur}"))
+	}
+
+	local cmd cur prev cmds opts clusters
+    COMPREPLY=()
+    _get_comp_words_by_ref cur prev
+    cmd="${COMP_WORDS[1]}"
+    cmds="switch use clear start stop restart build remove version ls versions help"
+
+    # switch    Set the current PostgreSQL version
+    # use       Set and start the current PostgreSQL version
+    # clear     Stop and unset the current PostgreSQL version
+    # start     Start the current PostgreSQL server
+    # stop      Stop the current PostgreSQL server
+    # restart   Restart the current PostgreSQL server
+    # build     Build a specific version of PostgreSQL
+    # remove    Remove a specific version of PostgreSQL
+    # version   Show the current PostgreSQL version
+    # versions  List all Perl versions available to pgenv
+    # help      Show this usage statement and command summary
+
+    case $cmd in
+    	switch|use|remove)
+			version_complete
+			return 0
+			;;
+
+		clear|start|stop|restart|build|version|ls|versions|help)
+			# nothing to complete
+			return 0
+			;;
+    esac
+
+	COMPREPLY=($( compgen -W "${cmds}" -- "${cur}"))
+    return 0
+}
+complete -F _pgenv pgenv
