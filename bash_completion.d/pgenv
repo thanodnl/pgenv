@@ -2,7 +2,7 @@
 
 _pgenv()
 {
-	version_complete()
+	_pgenv_version_complete()
 	{
 		local versions=$(for x in `pgenv ls | tr -d "*" | awk -F "pgsql-" '{print $2}'`; do echo ${x}; done)
 		COMPREPLY=($( compgen -W "${versions}" -- "${1:-$cur}"))
@@ -28,7 +28,7 @@ _pgenv()
 
     case $cmd in
     	switch|use|remove)
-			version_complete
+			_pgenv_version_complete
 			return 0
 			;;
 
