@@ -210,7 +210,7 @@ Outputs a brief usage statement and summary of available commands. The
         build     Build a specific version of PostgreSQL
         remove    Remove a specific version of PostgreSQL
         version   Show the current PostgreSQL version
-        versions  List all Perl versions available to pgenv
+        versions  List all PostgreSQL versions available to pgenv
         help      Show this usage statement and command summary
     
     For full documentation, see: https://github.com/theory/pgenv#readme
