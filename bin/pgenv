@@ -10,7 +10,7 @@ set -E
 
 # Set PGENV_ROOT only if not already set.
 if [ -z "$PGENV_ROOT" ]; then
-    PGENV_ROOT=$(dirname $(dirname $0))
+    PGENV_ROOT=$(dirname $(dirname $(realpath $0)))
 else
     echo "Using PGENV_ROOT $PGENV_ROOT" >&2
 fi
