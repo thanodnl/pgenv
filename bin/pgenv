@@ -15,6 +15,8 @@ else
     echo "Using PGENV_ROOT $PGENV_ROOT" >&2
 fi
 
+ORIGINAL_PWD=$(pwd)
+
 cd "$PGENV_ROOT" || exit
 # Always use an absolute path or configure could complain.
 PGENV_ROOT=$(pwd)
@@ -717,6 +719,50 @@ EOF
 pgenv_configuration_show_path(){
     local v=$1
     pgenv_configuration_file_name "$v" "SKIP-ENV"
+}
+
+pgenv_configuration_apply_local(){
+    local v=$1
+    # error out if v is default, because we don't want to apply the default configuration
+    if [ "$v" = "default" ]; then
+        echo "Missing version, cannot apply default configuration" >&2
+        exit 1
+    fi
+    pgenv_check_dependencies
+    # possibly simlink this source directory into pgenv's sources
+    # pgenv_input_version_or_exit "$v"
+    pgenv_configuration_load "$v"
+    pgenv_check_dependencies
+
+    # warn if no configuration was loaded
+    if [ -n "$PGENV_WARNINGS" ]; then
+        if [ -z "$PGENV_CONFIGURATION_FILE" ]; then
+            seconds=5
+            cat <<EOF
+
+WARNING: no configuration file found for version $v
+HINT: if you wish to customize the build process please
+stop the execution within $seconds seconds (CTRL-c) and run
+
+    pgenv config init $v && pgenv config edit $v
+
+adjust 'configure' and 'make' options and flags and run again
+
+    pgenv $command $v
+
+EOF
+
+            sleep $seconds
+        fi
+    fi
+
+    echo "Applying local configuration for version [$v]"
+
+    pgenv_debug "configure command line [--prefix=$PGENV_ROOT/pgsql-$v] + [${PGENV_CONFIGURE_OPTIONS[*]}]"
+    pushd $ORIGINAL_PWD > /dev/null
+    ./configure --prefix="$PGENV_ROOT/pgsql-$v" "${PGENV_CONFIGURE_OPTIONS[@]}"
+    popd > /dev/null
+    pgenv_configuration_write "$v"
 }
 
 # Utility function to write a single variable in the configuration file.
@@ -1766,6 +1812,8 @@ EOF
                 pgenv_configuration_delete "$v" "$nuke";;
         path)
         pgenv_configuration_show_path "$v";;
+            local)
+                pgenv_configuration_apply_local "$v";;
             *)
                 if [ -z "$action" ]; then
                     cat <<EOF >&2
@@ -1778,6 +1826,7 @@ You need to specify one of the following \`config\` actions to perform:
     delete
     use
     path
+    local
 
 For instance:
 
